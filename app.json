@@ -40,7 +40,10 @@
     "extra": {
       "appEnv": "development",
       "mediaBaseUrl": "",
-      "deviceId": "phone01"
+      "deviceId": "phone01",
+      "eas": {
+        "projectId": "e1dab4fa-3775-4101-89c1-7a5c09da33bc"
+      }
     },
     "runtimeVersion": {
       "policy": "appVersion"

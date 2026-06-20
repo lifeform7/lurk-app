@@ -32,7 +32,7 @@
       "expo-video"
     ],
     "web": {
-      "output": "static"
+      "output": "single"
     },
     "experiments": {
       "reactCompiler": true

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as Battery from 'expo-battery';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
@@ -28,6 +29,12 @@ interface LurkEvent {
   };
 }
 
+interface DeviceStats {
+  batteryLevel: number | null;
+  batteryState: Battery.BatteryState | null;
+  eventBytes: number;
+}
+
 const BG = '#080b0e';
 const PANEL = '#11171d';
 const PANEL_2 = '#172029';
@@ -51,6 +58,13 @@ const detectionLabels: Record<DetectionMode, string> = {
   animal: 'Animal / Pet',
 };
 
+const batteryStateLabels: Record<number, string> = {
+  [Battery.BatteryState.UNKNOWN]: 'Unknown',
+  [Battery.BatteryState.UNPLUGGED]: 'Battery',
+  [Battery.BatteryState.CHARGING]: 'Charging',
+  [Battery.BatteryState.FULL]: 'Full',
+};
+
 export default function App() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -65,10 +79,29 @@ export default function App() {
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [zoom, setZoom] = useState(0);
   const [capturing, setCapturing] = useState(false);
+  const [deviceStats, setDeviceStats] = useState<DeviceStats>({
+    batteryLevel: null,
+    batteryState: null,
+    eventBytes: 0,
+  });
 
   useEffect(() => {
-    ensureEventStore().then(loadEvents).then(setEvents).catch(() => {});
+    ensureEventStore()
+      .then(loadEvents)
+      .then((loadedEvents) => {
+        setEvents(loadedEvents);
+        return refreshDeviceStats(loadedEvents);
+      })
+      .then(setDeviceStats)
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshDeviceStats(events).then(setDeviceStats).catch(() => {});
+    }, monitoring ? 30000 : 90000);
+    return () => clearInterval(interval);
+  }, [events, monitoring]);
 
   useEffect(() => {
     if (monitoring) {
@@ -112,6 +145,7 @@ export default function App() {
       const next = [event, ...events].slice(0, 100);
       setEvents(next);
       await saveEvents(next);
+      setDeviceStats(await refreshDeviceStats(next));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (error) {
       Alert.alert('Capture failed', error instanceof Error ? error.message : String(error));
@@ -181,6 +215,28 @@ export default function App() {
             <Text style={styles.captureButtonText}>{capturing ? 'Saving' : 'Capture Event'}</Text>
           </Pressable>
         </View>
+
+        <Panel title="Device Health" icon="battery-charging">
+          <View style={styles.healthGrid}>
+            <HealthStat
+              icon="battery-half"
+              label="Battery"
+              value={formatBattery(deviceStats)}
+              tone={batteryTone(deviceStats)}
+            />
+            <HealthStat
+              icon="archive"
+              label="Events"
+              value={`${events.length} saved`}
+            />
+            <HealthStat
+              icon="server"
+              label="Local Size"
+              value={formatBytes(deviceStats.eventBytes)}
+            />
+          </View>
+          <Text style={styles.footnote}>Keep this panel visible during the old-phone smoke test to catch battery drain and storage growth early.</Text>
+        </Panel>
 
         <Panel title="Live Controls" icon="videocam">
           <Segmented
@@ -308,6 +364,16 @@ function ActionButton({ icon, label, tone, disabled }: { icon: keyof typeof Ioni
   );
 }
 
+function HealthStat({ icon, label, value, tone }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; tone?: 'warn' }) {
+  return (
+    <View style={[styles.healthStat, tone === 'warn' && styles.healthStatWarn]}>
+      <Ionicons name={icon} size={18} color={tone === 'warn' ? WARN : ACCENT} />
+      <Text style={styles.healthLabel}>{label}</Text>
+      <Text style={styles.healthValue} numberOfLines={1}>{value}</Text>
+    </View>
+  );
+}
+
 function SettingRow({ title, subtitle, value, onValueChange }: { title: string; subtitle: string; value: boolean; onValueChange: (value: boolean) => void }) {
   return (
     <View style={styles.settingRow}>
@@ -348,6 +414,43 @@ async function loadEvents(): Promise<LurkEvent[]> {
 
 async function saveEvents(events: LurkEvent[]) {
   await FileSystem.writeAsStringAsync(INDEX_PATH, JSON.stringify(events, null, 2));
+}
+
+async function refreshDeviceStats(events: LurkEvent[]): Promise<DeviceStats> {
+  const [batteryLevel, batteryState, eventBytes] = await Promise.all([
+    Battery.getBatteryLevelAsync().catch(() => null),
+    Battery.getBatteryStateAsync().catch(() => null),
+    calculateEventBytes(events),
+  ]);
+  return { batteryLevel, batteryState, eventBytes };
+}
+
+async function calculateEventBytes(events: LurkEvent[]) {
+  let total = 0;
+  const indexInfo = await FileSystem.getInfoAsync(INDEX_PATH).catch(() => null);
+  if (indexInfo?.exists && 'size' in indexInfo && typeof indexInfo.size === 'number') total += indexInfo.size;
+  for (const event of events) {
+    const info = await FileSystem.getInfoAsync(event.mediaUri).catch(() => null);
+    if (info?.exists && 'size' in info && typeof info.size === 'number') total += info.size;
+  }
+  return total;
+}
+
+function formatBattery(stats: DeviceStats) {
+  const pct = stats.batteryLevel === null ? '--' : `${Math.round(stats.batteryLevel * 100)}%`;
+  const state = stats.batteryState === null ? 'Unknown' : batteryStateLabels[stats.batteryState] ?? 'Unknown';
+  return `${pct} · ${state}`;
+}
+
+function batteryTone(stats: DeviceStats): 'warn' | undefined {
+  if (stats.batteryLevel !== null && stats.batteryLevel < 0.2 && stats.batteryState !== Battery.BatteryState.CHARGING) return 'warn';
+  return undefined;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function createEventId() {
@@ -410,6 +513,11 @@ const styles = StyleSheet.create({
   actionWarn: { borderColor: '#544427', backgroundColor: '#211b12' },
   disabled: { opacity: 0.6 },
   actionButtonText: { color: '#d6e3e9', fontSize: 12, fontWeight: '900' },
+  healthGrid: { flexDirection: 'row', gap: 8 },
+  healthStat: { flex: 1, minHeight: 82, borderRadius: 14, backgroundColor: PANEL_2, borderWidth: 1, borderColor: BORDER, padding: 10, justifyContent: 'space-between' },
+  healthStatWarn: { borderColor: '#6d5128', backgroundColor: '#241b11' },
+  healthLabel: { color: '#8fa0aa', fontSize: 11, fontWeight: '900', marginTop: 6 },
+  healthValue: { color: '#fff', fontSize: 13, fontWeight: '900' },
   footnote: { color: '#7e8d96', fontSize: 12, lineHeight: 17, marginTop: 10 },
   emptyTimeline: { alignItems: 'center', paddingVertical: 22 },
   emptyTitle: { color: '#dbe7ed', fontSize: 15, fontWeight: '900', marginTop: 8 },

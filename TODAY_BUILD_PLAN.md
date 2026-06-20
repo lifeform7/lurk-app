@@ -38,6 +38,22 @@ If `react-native-vision-camera` is selected, plan for a dev-client build immedia
 4. Capture one still frame to local storage.
 5. Show that still frame in an event timeline.
 6. Run for 10-30 minutes and observe battery/thermal behavior.
+7. Test torch, lens switching, zoom, and audio permission availability.
+8. Record whether screen-off/background monitoring is possible or blocked.
+
+## First Controls To Stub In UI
+
+Use disabled placeholders if the native path is not ready yet:
+
+- live quality selector
+- audio mute
+- zoom
+- torch
+- detection zone
+- detection schedule
+- person-only / animal mode
+- push-to-talk
+- siren/admin action
 
 ## Build Budget Rule
 

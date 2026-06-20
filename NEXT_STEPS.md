@@ -97,6 +97,61 @@ First useful build:
    - Optional upload/copy to the NAS/web media path.
    - Keep a JSON event index for later viewer/sync features.
 
+## Feature Ideas From Existing Camera Apps
+
+These are useful product references, but Lurk should stay simpler and more local-first.
+
+Live viewing:
+
+- Camera list with latest snapshot and connection state.
+- Tap a camera to open a live session.
+- Show camera name, online/offline state, viewer count, and stream quality.
+- Audio mute/unmute.
+- Digital zoom with pinch/double-tap.
+- Rotate preview and switch lens if device supports it.
+- Flashlight/torch toggle.
+- Quality selector: data saver, balanced, high.
+- Idle prompt or auto-disconnect for live sessions to save battery/data.
+- Optional always-on live mode for trusted LAN use.
+
+Event capture:
+
+- Motion-triggered event clips.
+- Continuous recording mode as an explicit advanced option.
+- Playback timeline that can jump to events inside continuous recordings.
+- Share/export a clip or still image.
+- Mark events as kept, false positive, person, pet, wildlife, vehicle, package.
+
+Detection controls:
+
+- Detection zones so waving trees/roads/TVs can be ignored.
+- Detection schedule by day/time.
+- Person-only mode for security use.
+- Animal/pet mode for wildlife and pet monitoring.
+- Sensitivity slider with presets.
+- Cooldown/debounce to avoid event floods.
+
+Live interaction:
+
+- Push-to-talk from viewer to camera device.
+- Camera-side audio return when not talking.
+- Siren/alarm action restricted to owner/admin.
+- Optional custom alarm sound later, but a single default is enough first.
+
+Low light:
+
+- Software low-light filter for dim rooms.
+- Night mode setting: automatic, on, off.
+- Torch/spotlight fallback when no IR hardware exists.
+- Train/evaluate models separately for day/night where possible.
+
+Privacy and access:
+
+- App lock/passcode after inactivity.
+- Owner/admin vs viewer permissions.
+- Share camera access with trusted users later.
+- Privacy zones that mask parts of the frame before recording/uploading.
+
 ## Architecture Recommendation
 
 Use a proven video pipeline before custom ML:
@@ -179,6 +234,8 @@ Later live-view options:
 - MJPEG/HLS gateway
 - periodic still snapshots
 - push notification with event thumbnail
+- multi-camera grid with latest snapshots first, live previews later
+- direct LAN/P2P preferred, relay only if we intentionally build it
 
 ## Reuse From I Like Birds
 

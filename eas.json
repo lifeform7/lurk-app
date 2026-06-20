@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_LURK_DEVICE_ID": "phone01",
+        "EXPO_PUBLIC_LURK_MEDIA_BASE_URL": "https://www.lifeform7.com/lurk-media/"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_LURK_DEVICE_ID": "phone01",
+        "EXPO_PUBLIC_LURK_MEDIA_BASE_URL": "https://www.lifeform7.com/lurk-media/"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_LURK_DEVICE_ID": "phone01",
+        "EXPO_PUBLIC_LURK_MEDIA_BASE_URL": "https://www.lifeform7.com/lurk-media/"
+      }
+    }
+  }
+}

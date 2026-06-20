@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Lurk",
+    "slug": "lurk",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "lurk",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lifeform7.lurk",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Lurk uses the camera to monitor motion and capture security or wildlife events.",
+        "NSMicrophoneUsageDescription": "Lurk uses the microphone for camera audio and future push-to-talk features.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.lifeform7.lurk",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-video"
+    ],
+    "web": {
+      "output": "static"
+    },
+    "experiments": {
+      "reactCompiler": true
+    },
+    "extra": {
+      "appEnv": "development",
+      "mediaBaseUrl": "",
+      "deviceId": "phone01"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": ""
+    },
+    "owner": "lifeform7"
+  }
+}
